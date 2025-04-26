@@ -40,10 +40,14 @@ namespace RevivalLite.Patches
                 if (RevivalFeatures.IsPlayerInvulnerable(playerId))
                 {
                     Plugin.LogSource.LogInfo($"Player {playerId} is invulnerable, blocking death completely");
+
+                    // heal again
+                    RevivalFeatures.HealPlayer(player);
+
                     return false; // Block the kill completely
                 }
 
-                Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player {player.ProfileId} about to die from {damageType}");
+                // Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player {player.ProfileId} about to die from {damageType}");
 
                 // Check if the player has the revival item
                 var inRaidItems = player.Inventory.GetPlayerItems(EPlayerItems.Equipment);

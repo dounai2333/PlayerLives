@@ -21,8 +21,6 @@ namespace RevivalLite.Features
     /// </summary>
     internal class RevivalFeatures : ModulePatch
     {
-        // New constants for effects
-        private static readonly float MOVEMENT_SPEED_MULTIPLIER = 0.1f; // 40% normal speed during invulnerability
         private static readonly bool DISABLE_SHOOTING_DURING_INVULNERABILITY = true; // Disable shooting during invulnerability
         // States
         private static Dictionary<string, long> _lastRevivalTimesByPlayer = new Dictionary<string, long>();
@@ -58,14 +56,10 @@ namespace RevivalLite.Features
                         timer -= Time.deltaTime;
                         _playerInvulnerabilityTimers[playerId] = timer;
 
-                        // Disable shooting during invulnerability
                         if (DISABLE_SHOOTING_DURING_INVULNERABILITY)
                         {
-                            // Block shooting by canceling fire operations
-                            if (__instance.HandsController.IsAiming)
-                            {
-                                __instance.HandsController.IsAiming = false;
-                            }
+                            // disable shooting by setting hands to nothing
+                            PlayerClient.SetEmptyHands(null);
                         }
 
                         // End invulnerability if timer is up
@@ -144,23 +138,21 @@ namespace RevivalLite.Features
             }
         }
 
-        // Method to make player invisible to AI - improved implementation
         private static void ApplyCriticalStatePlayer(Player player)
         {
             try
             {
                 string playerId = player.ProfileId;
-
+                
                 player.HandsController.IsAiming = false;
                 player.MovementContext.EnableSprint(false);
                 player.MovementContext.SetPoseLevel(0);           
                 player.MovementContext.IsInPronePose = true;
                 player.ResetLookDirection();
 
-                // stops player from moving etc hands from doing stuff
-                player.SetEmptyHands(null);
-                
-                // Is alive player can't move
+                // player.SetEmptyHands(null);
+                                
+                // Is alive player can't open menu
                 player.ActiveHealthController.IsAlive = false;
 
             }
@@ -254,12 +246,12 @@ namespace RevivalLite.Features
                 // Apply revival effects - now with limited healing
                 HealPlayer(player);
 
-                // Apply invulnerability
                 StartInvulnerability(player);
 
                 // Stand player up 
                 player.MovementContext.SetPoseLevel(1);           
                 player.MovementContext.IsInPronePose = false;
+                player.MovementContext.EnableSprint(true);
 
                 player.ActiveHealthController.IsAlive = true;
 
@@ -273,7 +265,7 @@ namespace RevivalLite.Features
 
                 // Show successful revival notification
                 NotificationManagerClass.DisplayMessageNotification(
-                    "Defibrillator used successfully! You are temporarily invulnerable.",
+                    $"Invulnerability started ({Settings.REVIVAL_DURATION.Value}s)!",
                     ENotificationDurationType.Long,
                     ENotificationIconType.Default,
                     Color.green);
@@ -322,7 +314,7 @@ namespace RevivalLite.Features
             }
         }
 
-        private static void HealPlayer(Player player)
+        public static void HealPlayer(Player player)
         {
             try
             {
@@ -339,10 +331,11 @@ namespace RevivalLite.Features
 
                     foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
                     {
-                        Plugin.LogSource.LogDebug($"{bodyPart.ToString()} is on {healthController.GetBodyPartHealth(bodyPart).Current} health.");
+                        // Plugin.LogSource.LogDebug($"{bodyPart.ToString()} is on {healthController.GetBodyPartHealth(bodyPart).Current} health.");
+                        // if(bodyPart == EBodyPart.LeftLeg || bodyPart == EBodyPart.RightLeg)
                         if (healthController.GetBodyPartHealth(bodyPart).Current < 1) { 
                             healthController.FullRestoreBodyPart(bodyPart);
-                            Plugin.LogSource.LogDebug($"Restored {bodyPart.ToString()}.");
+                            // Plugin.LogSource.LogDebug($"Restored {bodyPart.ToString()}.");
                         }
                     }
                 }
@@ -352,9 +345,9 @@ namespace RevivalLite.Features
                 }
 
                 // Apply painkillers effect
-                healthController.DoPainKiller();
+                // healthController.DoPainKiller();
 
-                Plugin.LogSource.LogInfo("Applied limited revival effects to player");
+                // Plugin.LogSource.LogInfo("Applied limited revival effects to player");
             }
             catch (Exception ex)
             {
@@ -394,23 +387,12 @@ namespace RevivalLite.Features
             _playerIsInvulnerable[playerId] = true;
             _playerInvulnerabilityTimers[playerId] = Settings.REVIVAL_DURATION.Value;
 
-            // Show notification that invulnerability has started
-            if (player.IsYourPlayer)
-            {
-                NotificationManagerClass.DisplayMessageNotification(
-                    "Invulnerability started!",
-                    ENotificationDurationType.Long,
-                    ENotificationIconType.Default,
-                    Color.white);
-            }
-
             Plugin.LogSource.LogInfo($"Started invulnerability for player {playerId} for {Settings.REVIVAL_DURATION.Value} seconds");
         }
 
         private static void EndInvulnerability(Player player)
         {
-            if (player == null)
-                return;
+            if (player == null) return;
 
             string playerId = player.ProfileId;
             _playerIsInvulnerable[playerId] = false;
@@ -428,6 +410,7 @@ namespace RevivalLite.Features
 
             Plugin.LogSource.LogInfo($"Ended invulnerability for player {playerId}");
         }
+       
         public static bool IsPlayerInvulnerable(string playerId)
         {
             return _playerIsInvulnerable.TryGetValue(playerId, out bool invulnerable) && invulnerable;
