@@ -3,6 +3,13 @@ using BepInEx.Logging;
 using RevivalLite.Patches;
 using RevivalLite.Helpers;
 using RevivalLite.Features;
+using HarmonyLib;
+using SPT.Reflection.Patching;
+using System.Reflection;
+﻿using System;
+using EFT;
+using Comfort.Common;
+using static BotMemoryClass;
 
 namespace RevivalLite
 {
@@ -24,5 +31,6 @@ namespace RevivalLite
   
             LogSource.LogInfo("Revival plugin initialized! Press F5 to use your defibrillator when in critical state.");
         }
+
     }
 }

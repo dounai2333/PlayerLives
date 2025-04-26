@@ -47,7 +47,9 @@ namespace RevivalLite.Patches
 
                 // Check if the player has the revival item
                 var inRaidItems = player.Inventory.GetPlayerItems(EPlayerItems.Equipment);
-                bool hasDefib = inRaidItems.Any(item => item.TemplateId == Constants.Constants.ITEM_ID);
+                bool hasDefib = inRaidItems.Any(item => {
+                        return item.TemplateId == Constants.Constants.ITEM_ID;
+                    });
 
                 Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player has defibrillator: {hasDefib || Settings.TESTING.Value}");
 

@@ -23,9 +23,7 @@ namespace RevivalLite.Features
     {
         // New constants for effects
         private static readonly float MOVEMENT_SPEED_MULTIPLIER = 0.1f; // 40% normal speed during invulnerability
-        private static readonly bool FORCE_CROUCH_DURING_INVULNERABILITY = false; // Force player to crouch during invulnerability
-        private static readonly bool DISABLE_SHOOTING_DURING_INVULNERABILITY = false; // Disable shooting during invulnerability
-
+        private static readonly bool DISABLE_SHOOTING_DURING_INVULNERABILITY = true; // Disable shooting during invulnerability
         // States
         private static Dictionary<string, long> _lastRevivalTimesByPlayer = new Dictionary<string, long>();
         private static Dictionary<string, bool> _playerInCriticalState = new Dictionary<string, bool>();
@@ -59,16 +57,6 @@ namespace RevivalLite.Features
                     {
                         timer -= Time.deltaTime;
                         _playerInvulnerabilityTimers[playerId] = timer;
-
-                        // Force player to crouch during invulnerability
-                        if (FORCE_CROUCH_DURING_INVULNERABILITY)
-                        {
-                            // Force crouch state
-                            if (__instance.MovementContext.PoseLevel > 0)
-                            {
-                                __instance.MovementContext.SetPoseLevel(0);
-                            }
-                        }
 
                         // Disable shooting during invulnerability
                         if (DISABLE_SHOOTING_DURING_INVULNERABILITY)
@@ -124,11 +112,8 @@ namespace RevivalLite.Features
                 // Make player invulnerable while in critical state
                 _playerIsInvulnerable[playerId] = true;
 
-                // Apply tremor effect without healing
-                ApplyCriticalEffects(player);
-
-                // Make player invisible to AI - fixed implementation
-                ApplyRevivableStatePlayer(player);
+                // Put player in down state 
+                ApplyCriticalStatePlayer(player);
 
                 if (player.IsYourPlayer)
                 {
@@ -159,38 +144,8 @@ namespace RevivalLite.Features
             }
         }
 
-        // Apply effects for critical state without healing
-        private static void ApplyCriticalEffects(Player player)
-        {
-            try
-            {
-                string playerId = player.ProfileId;
-
-                // Don't apply random effects on wake up? Can't see.
-                // player.ActiveHealthController.DoContusion(Settings.REVIVAL_DURATION.Value, 1f);
-                // player.ActiveHealthController.DoStun(Settings.REVIVAL_DURATION.Value / 2, 1f);
-
-                // Restrict player to crouch-only
-                if (player.MovementContext != null)
-                {
-                    // Force crouch
-                    player.MovementContext.SetPoseLevel(0);
-
-                    // Disable sprinting
-                    player.ActiveHealthController.AddFatigue();
-                    player.ActiveHealthController.SetStaminaCoeff(0f);
-                }
-
-                Plugin.LogSource.LogDebug($"Applied critical effects to player {playerId}");
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogSource.LogError($"Error applying critical effects: {ex.Message}");
-            }
-        }
-
         // Method to make player invisible to AI - improved implementation
-        private static void ApplyRevivableStatePlayer(Player player)
+        private static void ApplyCriticalStatePlayer(Player player)
         {
             try
             {
@@ -198,13 +153,14 @@ namespace RevivalLite.Features
 
                 player.HandsController.IsAiming = false;
                 player.MovementContext.EnableSprint(false);
-                player.MovementContext.SetPoseLevel(0);
+                player.MovementContext.SetPoseLevel(0);           
                 player.MovementContext.IsInPronePose = true;
                 player.ResetLookDirection();
 
                 // stops player from moving etc hands from doing stuff
-                // player.SetEmptyHands(null);
+                player.SetEmptyHands(null);
                 
+                // Is alive player can't move
                 player.ActiveHealthController.IsAlive = false;
 
             }
@@ -301,6 +257,10 @@ namespace RevivalLite.Features
                 // Apply invulnerability
                 StartInvulnerability(player);
 
+                // Stand player up 
+                player.MovementContext.SetPoseLevel(1);           
+                player.MovementContext.IsInPronePose = false;
+
                 player.ActiveHealthController.IsAlive = true;
 
                 player.Say(EPhraseTrigger.OnMutter, false, 2f, ETagStatus.Combat, 100, true);
@@ -385,13 +345,14 @@ namespace RevivalLite.Features
                             Plugin.LogSource.LogDebug($"Restored {bodyPart.ToString()}.");
                         }
                     }
+                }
 
-                    // Remove negative effects
+                if (Settings.REMOVE_NEGATIVE_EFFECTS.Value) {
                     RemoveAllNegativeEffects(healthController);
                 }
 
                 // Apply painkillers effect
-                //healthController.DoPainKiller();
+                healthController.DoPainKiller();
 
                 Plugin.LogSource.LogInfo("Applied limited revival effects to player");
             }
@@ -437,7 +398,7 @@ namespace RevivalLite.Features
             if (player.IsYourPlayer)
             {
                 NotificationManagerClass.DisplayMessageNotification(
-                    "Temporary invulnerability has started.",
+                    "Invulnerability started!",
                     ENotificationDurationType.Long,
                     ENotificationIconType.Default,
                     Color.white);
@@ -459,15 +420,14 @@ namespace RevivalLite.Features
             if (player.IsYourPlayer)
             {
                 NotificationManagerClass.DisplayMessageNotification(
-                    "Temporary invulnerability has ended.",
+                    "Invulnerability ended!",
                     ENotificationDurationType.Long,
-                    ENotificationIconType.Default,
+                    ENotificationIconType.Alert,
                     Color.white);
             }
 
             Plugin.LogSource.LogInfo($"Ended invulnerability for player {playerId}");
         }
-
         public static bool IsPlayerInvulnerable(string playerId)
         {
             return _playerIsInvulnerable.TryGetValue(playerId, out bool invulnerable) && invulnerable;

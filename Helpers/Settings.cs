@@ -9,15 +9,14 @@ namespace RevivalLite.Helpers
         public static ConfigEntry<KeyCode> REVIVAL_KEY;
         public static ConfigEntry<float> REVIVAL_COOLDOWN;
         public static ConfigEntry<bool> RESTORE_DESTROYED_BODY_PARTS;
-
+        public static ConfigEntry<bool> REMOVE_NEGATIVE_EFFECTS;
         public static ConfigEntry<bool> HARDCORE_MODE; 
         public static ConfigEntry<bool> HARDCORE_HEADSHOT_DEFAULT_DEAD;
         public static ConfigEntry<float> HARDCORE_CHANCE_OF_CRITICAL_STATE;
-
         public static ConfigEntry<bool> TESTING;
 
         public static void Init(ConfigFile config)
-        {
+        {            
             HARDCORE_MODE = config.Bind(
                 "Hardcore Mode",
                 "Enable Hardcore Mode",
@@ -53,11 +52,18 @@ namespace RevivalLite.Helpers
                 "Revival Cooldown",
                 180f
               );
+            
             RESTORE_DESTROYED_BODY_PARTS = config.Bind(
-                "General",
+                "On Revive",
                 "Restore destroyed body parts after revive",
                 false,
                "Does not work if Hardcore Mode is enabled"
+            );
+
+            REMOVE_NEGATIVE_EFFECTS = config.Bind(
+                "On Revive",
+                "Remove negative effects bleed etc",
+                false
             );
 
             TESTING = config.Bind(
