@@ -2,6 +2,7 @@
 using BepInEx.Logging;
 using RevivalLite.Patches;
 using RevivalLite.Helpers;
+using RevivalLite.Features;
 
 namespace RevivalLite
 {
@@ -19,6 +20,7 @@ namespace RevivalLite
             
             // Enable patches
             new DeathPatch().Enable();
+            new RevivalFeatures().Enable();
 
             LogSource.LogInfo("Revival plugin initialized! Press F5 to use your defibrillator when in critical state.");
         }

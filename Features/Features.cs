@@ -233,7 +233,7 @@ namespace RevivalLite.Features
         }
 
         // Method to make player invisible to AI - improved implementation
-        private static void  ApplyRevivableStatePlayer(Player player)
+        private static void ApplyRevivableStatePlayer(Player player)
         {
             try
             {
@@ -328,7 +328,6 @@ namespace RevivalLite.Features
                 return new KeyValuePair<string, bool>(string.Empty, false);
             }
         }
-
 
         public static bool TryPerformManualRevival(Player player)
         {
