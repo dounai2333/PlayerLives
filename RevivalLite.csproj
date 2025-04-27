@@ -76,13 +76,14 @@
         <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>references\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
-        <Reference Include="UnityEngine.InputLegacyModule">
+    <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>references\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\&quot;" />
+    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\BepInEx\plugins\&quot;" />
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;G:\games\~spt 3.10\BepInEx\plugins\&quot;" />
+    <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx','$(ProjectDir)\Build\user' -DestinationPath '$(ProjectDir)\Build\RevivalLite.zip' -Force)"/>
   </Target>
 </Project>
