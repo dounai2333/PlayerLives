@@ -148,6 +148,10 @@ namespace RevivalLite.Features
                 player.MovementContext.IsInPronePose = true;
                 player.ResetLookDirection();
 
+                // Apply black out effect on revive
+                player.ActiveHealthController.DoContusion(1f, 1f);
+                player.ActiveHealthController.DoStun(1f, 1f);
+
                 // Is alive player can't open menu
                 player.ActiveHealthController.IsAlive = false;
 
@@ -359,9 +363,25 @@ namespace RevivalLite.Features
             healthController.SetDamageCoeff(0f);
 
             // Apply pain killer buff so you can run on damaged legs
-            healthController.DoPainKiller();
+            healthController.AddEffect<PainKiller>(EBodyPart.Head, null, Settings.REVIVAL_DURATION.Value);
 
             Plugin.LogSource.LogInfo($"Started invulnerability for player {playerId} for {Settings.REVIVAL_DURATION.Value} seconds");
+        }
+
+        protected class PainKiller : ActiveHealthController.GClass2813, GInterface332, IEffect, GInterface306, GInterface308, GInterface304
+        {
+            public string ItemTemplateId { get; set; }
+            public float MaxDuration { get; set; }
+            public void UpdateWithSameOne(float strength)
+            {
+                float num = MaxDuration * strength;
+                AddWorkTime(Mathf.Clamp(base.TimeLeft + num, 0f, MaxDuration), reset: true);
+            }
+            public void StoreValues(string templateId, float duration)
+            {
+                ItemTemplateId = templateId;
+                MaxDuration = duration;
+            }
         }
 
         private static void EndInvulnerability(Player player)
@@ -376,22 +396,11 @@ namespace RevivalLite.Features
             if (_playerDamageCoeff.TryGetValue(playerId, out float damageCoeff))
                 player.ActiveHealthController.SetDamageCoeff(damageCoeff);
 
-            // Remove pain killer
-            player.ActiveHealthController.method_18(EBodyPart.Head, (effect) =>
-            {
-                // Plugin.LogSource.LogInfo($"Looking for effect {effect.ToString()}");
-                return effect.ToString().Contains("PainKiller");
-            });
-
-            // Show notification that invulnerability has ended
-            if (player.IsYourPlayer)
-            {
-                NotificationManagerClass.DisplayMessageNotification(
-                    "Invulnerability ended!",
-                    ENotificationDurationType.Long,
-                    ENotificationIconType.Alert,
-                    Color.white);
-            }
+            NotificationManagerClass.DisplayMessageNotification(
+                "Invulnerability ended!",
+                ENotificationDurationType.Long,
+                ENotificationIconType.Alert,
+                Color.white);
 
             Plugin.LogSource.LogInfo($"Ended invulnerability for player {playerId}");
         }
