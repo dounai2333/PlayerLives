@@ -54,7 +54,7 @@ namespace RevivalLite.Helpers
             
             RESTORE_DESTROYED_BODY_PARTS = config.Bind(
                 "On Revive",
-                "Restore destroyed body parts after revive",
+                "Restore destroyed body parts and provide a small 25% heal",
                 false,
                "Does not work if Hardcore Mode is enabled"
             );

@@ -13,6 +13,7 @@ using EFT.Communications;
 using Comfort.Common;
 using RevivalLite.Helpers;
 using BepInEx;
+using System.CodeDom;
 
 namespace RevivalLite.Features
 {
@@ -46,8 +47,7 @@ namespace RevivalLite.Features
                 PlayerClient = __instance;
 
                 // Only proceed for the local player
-                if (!__instance.IsYourPlayer)
-                    return;
+                if (!__instance.IsYourPlayer) return;
 
                 // Update invulnerability timer if active
                 if (_playerIsInvulnerable.TryGetValue(playerId, out bool isInvulnerable) && isInvulnerable)
@@ -203,8 +203,7 @@ namespace RevivalLite.Features
 
         public static bool TryPerformManualRevival(Player player)
         {
-            if (player == null)
-                return false;
+            if (player == null) return false;
 
             string playerId = player.ProfileId;
 
@@ -339,18 +338,15 @@ namespace RevivalLite.Features
                             healthController.method_35(bodyPart);
                         }
                     }
-
-                    // Apply pain killer buff so you can run on damaged legs
-
-                    // healthController.TryDoExternalBuff("Pain");
-
                 }
+
             }
             catch (Exception ex)
             {
                 Plugin.LogSource.LogError($"Error applying revival effects: {ex.Message}");
             }
         }
+
         private static void StartInvulnerability(Player player)
         {
             if (player == null) return;
@@ -363,6 +359,9 @@ namespace RevivalLite.Features
             ActiveHealthController healthController = player.ActiveHealthController;
             _playerDamageCoeff[player.ProfileId] = healthController.DamageCoeff;
             healthController.SetDamageCoeff(0f);
+
+            // Apply pain killer buff so you can run on damaged legs
+            healthController.DoPainKiller();
 
             Plugin.LogSource.LogInfo($"Started invulnerability for player {playerId} for {Settings.REVIVAL_DURATION.Value} seconds");
         }
@@ -377,10 +376,14 @@ namespace RevivalLite.Features
 
             // Restore damageCoeff
             if (_playerDamageCoeff.TryGetValue(playerId, out float damageCoeff))
+                player.ActiveHealthController.SetDamageCoeff(damageCoeff);
+
+            // Remove pain killer
+            player.ActiveHealthController.method_18(EBodyPart.Head, (effect) =>
             {
-                ActiveHealthController healthController = player.ActiveHealthController;
-                healthController.SetDamageCoeff(damageCoeff);
-            }
+                Plugin.LogSource.LogInfo($"Looking for effect {effect.ToString()}");
+                return effect.ToString().Contains("PainKiller");
+            });
 
             // Show notification that invulnerability has ended
             if (player.IsYourPlayer)
