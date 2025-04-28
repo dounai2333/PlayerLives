@@ -41,9 +41,6 @@ namespace RevivalLite.Patches
                 {
                     Plugin.LogSource.LogInfo($"Player {playerId} is invulnerable, blocking death completely");
 
-                    // heal again
-                    RevivalFeatures.HealPlayer(player);
-
                     return false; // Block the kill completely
                 }
 
@@ -51,9 +48,10 @@ namespace RevivalLite.Patches
 
                 // Check if the player has the revival item
                 var inRaidItems = player.Inventory.GetPlayerItems(EPlayerItems.Equipment);
-                bool hasDefib = inRaidItems.Any(item => {
-                        return item.TemplateId == Constants.Constants.ITEM_ID;
-                    });
+                bool hasDefib = inRaidItems.Any(item =>
+                {
+                    return item.TemplateId == Constants.Constants.ITEM_ID;
+                });
 
                 Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player has defibrillator: {hasDefib || Settings.TESTING.Value}");
 
@@ -62,13 +60,13 @@ namespace RevivalLite.Patches
                     Plugin.LogSource.LogInfo("DEATH PREVENTION: Setting player to critical state instead of death");
                     if (Settings.HARDCORE_MODE.Value)
                     {
-                        if (Settings.HARDCORE_HEADSHOT_DEFAULT_DEAD.Value && __instance.GetBodyPartHealth(EBodyPart.Head, true).Current < 1) {
+                        if (Settings.HARDCORE_HEADSHOT_DEFAULT_DEAD.Value && __instance.GetBodyPartHealth(EBodyPart.Head, true).Current < 1)
+                        {
                             Plugin.LogSource.LogInfo($"DEATH NOT PREVENTED: Player headshotted");
                             return true;
                         }
 
-
-                        var _randomNumber = new Random().Range(0, 100)/100;
+                        var _randomNumber = new Random().Range(0, 100) / 100;
                         if (Settings.HARDCORE_CHANCE_OF_CRITICAL_STATE.Value < _randomNumber)
                         {
                             Plugin.LogSource.LogInfo($"DEATH NOT PREVENTED: Player was unlucky. Random Number was: {_randomNumber}");

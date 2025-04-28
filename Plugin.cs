@@ -17,11 +17,10 @@ namespace RevivalLite
             LogSource = Logger;
             LogSource.LogInfo("Revival plugin loaded!");
             Settings.Init(Config);
-            
+
             // Enable patches
             new DeathPatch().Enable();
             new RevivalFeatures().Enable();
-  
         }
 
     }

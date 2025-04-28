@@ -27,6 +27,7 @@ namespace RevivalLite.Features
         private static Dictionary<string, bool> _playerInCriticalState = new Dictionary<string, bool>();
         private static Dictionary<string, bool> _playerIsInvulnerable = new Dictionary<string, bool>();
         private static Dictionary<string, float> _playerInvulnerabilityTimers = new Dictionary<string, float>();
+        private static Dictionary<string, float> _playerDamageCoeff = new Dictionary<string, float>();
         private static Dictionary<string, EFT.PlayerAnimator.EWeaponAnimationType> _originalWeaponAnimationType = new Dictionary<string, PlayerAnimator.EWeaponAnimationType>();
         private static Player PlayerClient { get; set; } = null;
 
@@ -128,7 +129,6 @@ namespace RevivalLite.Features
             }
             else
             {
-
                 // If player is leaving critical state without revival (e.g., revival failed),
                 // make sure to remove stealth from player and disable invulnerability
                 if (!_playerInvulnerabilityTimers.ContainsKey(playerId))
@@ -143,15 +143,14 @@ namespace RevivalLite.Features
             try
             {
                 string playerId = player.ProfileId;
-                
+
                 player.HandsController.IsAiming = false;
+                player.SetEmptyHands(null); // remove weapon
                 player.MovementContext.EnableSprint(false);
-                player.MovementContext.SetPoseLevel(0);           
+                player.MovementContext.SetPoseLevel(0);
                 player.MovementContext.IsInPronePose = true;
                 player.ResetLookDirection();
 
-                // player.SetEmptyHands(null);
-                                
                 // Is alive player can't open menu
                 player.ActiveHealthController.IsAlive = false;
 
@@ -243,19 +242,17 @@ namespace RevivalLite.Features
                     ConsumeDefibItem(player);
                 }
 
-                // Apply revival effects - now with limited healing
+                // Set alive first before applying effects
+                player.ActiveHealthController.IsAlive = true;
+
                 HealPlayer(player);
 
                 StartInvulnerability(player);
 
                 // Stand player up 
-                player.MovementContext.SetPoseLevel(1);           
+                player.MovementContext.SetPoseLevel(1);
                 player.MovementContext.IsInPronePose = false;
                 player.MovementContext.EnableSprint(true);
-
-                player.ActiveHealthController.IsAlive = true;
-
-                player.Say(EPhraseTrigger.OnMutter, false, 2f, ETagStatus.Combat, 100, true);
 
                 // Reset critical state
                 _playerInCriticalState[playerId] = false;
@@ -318,7 +315,6 @@ namespace RevivalLite.Features
         {
             try
             {
-                // Modified to provide limited healing instead of full healing
                 ActiveHealthController healthController = player.ActiveHealthController;
                 if (healthController == null)
                 {
@@ -326,59 +322,35 @@ namespace RevivalLite.Features
                     return;
                 }
 
-                if (!Settings.HARDCORE_MODE.Value && Settings.RESTORE_DESTROYED_BODY_PARTS.Value) {
-                    // Apply limited healing - enough to survive but not full health
-
+                // heal any blacked out parts
+                if (!Settings.HARDCORE_MODE.Value && Settings.RESTORE_DESTROYED_BODY_PARTS.Value)
+                {
                     foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
                     {
-                        // Plugin.LogSource.LogDebug($"{bodyPart.ToString()} is on {healthController.GetBodyPartHealth(bodyPart).Current} health.");
-                        // if(bodyPart == EBodyPart.LeftLeg || bodyPart == EBodyPart.RightLeg)
-                        if (healthController.GetBodyPartHealth(bodyPart).Current < 1) { 
-                            healthController.FullRestoreBodyPart(bodyPart);
-                            // Plugin.LogSource.LogDebug($"Restored {bodyPart.ToString()}.");
+                        if (healthController.GetBodyPartHealth(bodyPart).Current < 1)
+                        {
+                            // from healthController.FullRestoreBodyPart(bodyPart);
+                            // take health down to 25%
+                            ActiveHealthController.BodyPartState bodyPartState = healthController.Dictionary_0[bodyPart];
+                            bodyPartState.IsDestroyed = false;
+                            healthController.method_16(bodyPart);
+                            bodyPartState.Health = new HealthValue(bodyPartState.Health.Maximum * 0.25f, bodyPartState.Health.Maximum);
+                            healthController.method_43(bodyPart, EDamageType.Undefined);
+                            healthController.method_35(bodyPart);
                         }
                     }
+
+                    // Apply pain killer buff so you can run on damaged legs
+
+                    // healthController.TryDoExternalBuff("Pain");
+
                 }
-
-                if (Settings.REMOVE_NEGATIVE_EFFECTS.Value) {
-                    RemoveAllNegativeEffects(healthController);
-                }
-
-                // Apply painkillers effect
-                // healthController.DoPainKiller();
-
-                // Plugin.LogSource.LogInfo("Applied limited revival effects to player");
             }
             catch (Exception ex)
             {
                 Plugin.LogSource.LogError($"Error applying revival effects: {ex.Message}");
             }
         }
-
-        private static void RemoveAllNegativeEffects(ActiveHealthController healthController)
-        {
-            try
-            {
-                MethodInfo removeNegativeEffectsMethod = AccessTools.Method(typeof(ActiveHealthController), "RemoveNegativeEffects");
-                if (removeNegativeEffectsMethod != null)
-                {
-                    foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
-                    {
-                        try
-                        {
-                            removeNegativeEffectsMethod.Invoke(healthController, new object[] { bodyPart });
-                        }
-                        catch { }
-                    }
-                    Plugin.LogSource.LogInfo("Removed all negative effects from player");
-                }
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogSource.LogError($"Error removing effects: {ex.Message}");
-            }
-        }
-
         private static void StartInvulnerability(Player player)
         {
             if (player == null) return;
@@ -386,6 +358,11 @@ namespace RevivalLite.Features
             string playerId = player.ProfileId;
             _playerIsInvulnerable[playerId] = true;
             _playerInvulnerabilityTimers[playerId] = Settings.REVIVAL_DURATION.Value;
+
+            // Apply damage reduction buff
+            ActiveHealthController healthController = player.ActiveHealthController;
+            _playerDamageCoeff[player.ProfileId] = healthController.DamageCoeff;
+            healthController.SetDamageCoeff(0f);
 
             Plugin.LogSource.LogInfo($"Started invulnerability for player {playerId} for {Settings.REVIVAL_DURATION.Value} seconds");
         }
@@ -397,6 +374,13 @@ namespace RevivalLite.Features
             string playerId = player.ProfileId;
             _playerIsInvulnerable[playerId] = false;
             _playerInvulnerabilityTimers.Remove(playerId);
+
+            // Restore damageCoeff
+            if (_playerDamageCoeff.TryGetValue(playerId, out float damageCoeff))
+            {
+                ActiveHealthController healthController = player.ActiveHealthController;
+                healthController.SetDamageCoeff(damageCoeff);
+            }
 
             // Show notification that invulnerability has ended
             if (player.IsYourPlayer)
@@ -410,7 +394,7 @@ namespace RevivalLite.Features
 
             Plugin.LogSource.LogInfo($"Ended invulnerability for player {playerId}");
         }
-       
+
         public static bool IsPlayerInvulnerable(string playerId)
         {
             return _playerIsInvulnerable.TryGetValue(playerId, out bool invulnerable) && invulnerable;
