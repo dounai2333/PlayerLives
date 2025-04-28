@@ -3,7 +3,6 @@ using EFT.HealthSystem;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,8 +11,6 @@ using UnityEngine;
 using EFT.Communications;
 using Comfort.Common;
 using RevivalLite.Helpers;
-using BepInEx;
-using System.CodeDom;
 
 namespace RevivalLite.Features
 {
@@ -321,18 +318,19 @@ namespace RevivalLite.Features
                     return;
                 }
 
-                // heal any blacked out parts
-                if (!Settings.HARDCORE_MODE.Value && Settings.RESTORE_DESTROYED_BODY_PARTS.Value)
+                foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
                 {
-                    foreach (EBodyPart bodyPart in Enum.GetValues(typeof(EBodyPart)))
+                    if (healthController.GetBodyPartHealth(bodyPart).Current < 1)
                     {
-                        if (healthController.GetBodyPartHealth(bodyPart).Current < 1)
+                        // Remove bleed from destroyed body parts
+                        healthController.method_16(bodyPart);
+
+                        if (Settings.RESTORE_DESTROYED_BODY_PARTS.Value)
                         {
                             // from healthController.FullRestoreBodyPart(bodyPart);
                             // take health down to 25%
                             ActiveHealthController.BodyPartState bodyPartState = healthController.Dictionary_0[bodyPart];
                             bodyPartState.IsDestroyed = false;
-                            healthController.method_16(bodyPart);
                             bodyPartState.Health = new HealthValue(bodyPartState.Health.Maximum * 0.25f, bodyPartState.Health.Maximum);
                             healthController.method_43(bodyPart, EDamageType.Undefined);
                             healthController.method_35(bodyPart);
@@ -381,7 +379,7 @@ namespace RevivalLite.Features
             // Remove pain killer
             player.ActiveHealthController.method_18(EBodyPart.Head, (effect) =>
             {
-                Plugin.LogSource.LogInfo($"Looking for effect {effect.ToString()}");
+                // Plugin.LogSource.LogInfo($"Looking for effect {effect.ToString()}");
                 return effect.ToString().Contains("PainKiller");
             });
 
