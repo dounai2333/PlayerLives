@@ -4,7 +4,7 @@
     "main": "mod.js",
     "license": "MIT",
    "author": "KaikiNoodles",
-    "sptVersion": "~3.10",
+    "sptVersion": ">=3.10",
     "serverMod": true,
     "scripts": {
         "build": "tsc --project tsconfig.json",
