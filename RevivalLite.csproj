@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>RevivalLite</AssemblyName>
+    <AssemblyName>somtam.RevivalLite</AssemblyName>
     <Description>RevivalLite</Description>
     <Version>1.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -20,10 +20,7 @@
     <PackageReference Include="UnityEngine.Modules" Version="5.6.0" IncludeAssets="compile" />
   </ItemGroup>
   
-  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
-  </ItemGroup>
-  
+
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>references\0Harmony.dll</HintPath>
@@ -79,12 +76,21 @@
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>references\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>references\Sirenix.Serialization.dll</HintPath>
+    </Reference>
+    <Reference Include="ItemComponent.Types">
+      <HintPath>references\ItemComponent.Types.dll</HintPath>
+    </Reference>    
+    <Reference Include="ItemComponent.Types">
+      <HintPath>references\ItemComponent.Types.dll</HintPath>
+    </Reference>    
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;$(ProjectDir)\Build\BepInEx\plugins\&quot;" />
     <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;G:\games\~spt 3.10\BepInEx\plugins\&quot;" />
-    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;G:\games\spt 3.11\BepInEx\plugins\&quot;" />
-    <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx','$(ProjectDir)\Build\user' -DestinationPath '$(ProjectDir)\Build\RevivalLite.zip' -Force)"/>
+    <Exec Command="xcopy /y /f &quot;$(TargetPath)&quot; &quot;..\..\BepInEx\plugins\&quot;" />
+    <Exec Command="(powershell Compress-Archive -Path '$(ProjectDir)\Build\BepInEx','$(ProjectDir)\Build\user' -DestinationPath '$(ProjectDir)\Build\somtam.RevivalLite.zip' -Force)"/>
   </Target>
 </Project>

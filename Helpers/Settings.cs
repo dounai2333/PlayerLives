@@ -25,7 +25,7 @@ namespace RevivalLite.Helpers
             HARDCORE_CHANCE_OF_CRITICAL_STATE = config.Bind(
                 "Hardcore Mode",
                 "Chance of critical mode",
-                0.75f,
+                1f,
                "Adapt how big the odds are to enter critical state (be revivable) in hardcore mode. 0.75 is 75%"
             );
             HARDCORE_HEADSHOT_DEFAULT_DEAD = config.Bind(
@@ -38,8 +38,8 @@ namespace RevivalLite.Helpers
             REVIVAL_DURATION = config.Bind(
                 "General",
                 "Revival Duration",
-                4f,
-               "Adapt the duration of the amount of time it takes to revive."
+                10f,
+               "How long you are invulnerable for."
             );
             REVIVAL_KEY = config.Bind(
                 "General",
@@ -49,13 +49,13 @@ namespace RevivalLite.Helpers
             REVIVAL_COOLDOWN = config.Bind(
                 "General",
                 "Revival Cooldown",
-                180f
+                0f
               );
 
             RESTORE_DESTROYED_BODY_PARTS = config.Bind(
                 "On Revive",
                 "Restore destroyed body parts",
-                false,
+                true,
                "Blacked body parts are restored and healed for 25%"
             );
 

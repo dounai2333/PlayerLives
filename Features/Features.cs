@@ -1,14 +1,14 @@
 ﻿using EFT;
 using EFT.HealthSystem;
+using EFT.InventoryLogic;
+using EFT.Communications;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using EFT.InventoryLogic;
 using UnityEngine;
-using EFT.Communications;
 using Comfort.Common;
 using RevivalLite.Helpers;
 
@@ -141,12 +141,15 @@ namespace RevivalLite.Features
             {
                 string playerId = player.ProfileId;
 
+                player.Awareness = 0f;
+
                 player.HandsController.IsAiming = false;
-                player.SetEmptyHands(null); // remove weapon
+                // player.SetEmptyHands(null); // remove weapon
                 player.MovementContext.EnableSprint(false);
                 player.MovementContext.SetPoseLevel(0);
                 player.MovementContext.IsInPronePose = true;
                 player.ResetLookDirection();
+                player.MovementContext.ReleaseDoorIfInteractingWithOne();
 
                 // Apply black out effect on revive
                 player.ActiveHealthController.DoContusion(1f, 1f);
@@ -254,10 +257,9 @@ namespace RevivalLite.Features
                 player.MovementContext.IsInPronePose = false;
                 player.MovementContext.EnableSprint(true);
 
-                // Reset critical state
-                _playerInCriticalState[playerId] = false;
+                player.Say(EPhraseTrigger.OnMutter, false, 2f, ETagStatus.Combat, 100, true);
 
-                // Set last revival time
+                _playerInCriticalState[playerId] = false;
                 _lastRevivalTimesByPlayer[playerId] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                 // Show successful revival notification
@@ -303,6 +305,10 @@ namespace RevivalLite.Features
                     {
                         Plugin.LogSource.LogError("Could not find ThrowItem method");
                     }
+                }
+                else
+                {
+                    Plugin.LogSource.LogWarning("No defibrillator item found to consume");
                 }
             }
             catch (Exception ex)

@@ -6,7 +6,7 @@ using RevivalLite.Features;
 
 namespace RevivalLite
 {
-    [BepInPlugin("somtam.revivalLight", "Revival Lite", "1.0.0")]
+    [BepInPlugin("com.somtam.revivalLight", "Revival Lite", "1.0.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
