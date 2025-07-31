@@ -1,62 +1,40 @@
 ﻿using BepInEx.Configuration;
 using UnityEngine;
 
-namespace RevivalLite.Helpers
+namespace PlayerLives.Helpers
 {
     internal class Settings
     {
         public static ConfigEntry<float> REVIVAL_DURATION;
         public static ConfigEntry<KeyCode> REVIVAL_KEY;
-        public static ConfigEntry<float> REVIVAL_COOLDOWN;
         public static ConfigEntry<bool> RESTORE_DESTROYED_BODY_PARTS;
-        public static ConfigEntry<bool> HARDCORE_MODE;
-        public static ConfigEntry<bool> HARDCORE_HEADSHOT_DEFAULT_DEAD;
-        public static ConfigEntry<float> HARDCORE_CHANCE_OF_CRITICAL_STATE;
         public static ConfigEntry<bool> TESTING;
-
+        public static ConfigEntry<int> PLAYER_LIVES;
         public static void Init(ConfigFile config)
         {
-            HARDCORE_MODE = config.Bind(
-                "Hardcore Mode",
-                "* Enable Hardcore Mode",
-                false,
-               "Adapt the values below the change the hardcore settings"
+            PLAYER_LIVES = config.Bind(
+                "General",
+                "Player Lives",
+                1,
+               "How many revives per raid."
             );
-            HARDCORE_CHANCE_OF_CRITICAL_STATE = config.Bind(
-                "Hardcore Mode",
-                "Chance of critical mode",
-                1f,
-               "Adapt how big the odds are to enter critical state (be revivable) in hardcore mode. 0.75 is 75%"
-            );
-            HARDCORE_HEADSHOT_DEFAULT_DEAD = config.Bind(
-                "Hardcore Mode",
-                "Headshot is always dead",
-                false,
-               "Headshot kills always"
-            );
-
             REVIVAL_DURATION = config.Bind(
                 "General",
-                "Revival Duration",
+                "Invulnerability Duration (s)",
                 10f,
-               "How long you are invulnerable for."
+               "How long you are invulnerable for after revive."
             );
             REVIVAL_KEY = config.Bind(
                 "General",
                 "Revival Key",
                 KeyCode.F5
             );
-            REVIVAL_COOLDOWN = config.Bind(
-                "General",
-                "Revival Cooldown",
-                0f
-              );
 
             RESTORE_DESTROYED_BODY_PARTS = config.Bind(
                 "On Revive",
                 "Restore destroyed body parts",
                 true,
-               "Blacked body parts are restored and healed for 25%"
+               "Blackened body parts are restored and healed for 25%"
             );
 
             TESTING = config.Bind(

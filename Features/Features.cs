@@ -1,18 +1,15 @@
 ﻿using EFT;
 using EFT.HealthSystem;
-using EFT.InventoryLogic;
 using EFT.Communications;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using Comfort.Common;
-using RevivalLite.Helpers;
+using PlayerLives.Helpers;
 
-namespace RevivalLite.Features
+namespace PlayerLives.Features
 {
     /// <summary>
     /// Enhanced revival feature with manual activation and temporary invulnerability with restrictions
@@ -26,7 +23,6 @@ namespace RevivalLite.Features
         private static Dictionary<string, bool> _playerIsInvulnerable = new Dictionary<string, bool>();
         private static Dictionary<string, float> _playerInvulnerabilityTimers = new Dictionary<string, float>();
         private static Dictionary<string, float> _playerDamageCoeff = new Dictionary<string, float>();
-        private static Dictionary<string, EFT.PlayerAnimator.EWeaponAnimationType> _originalWeaponAnimationType = new Dictionary<string, PlayerAnimator.EWeaponAnimationType>();
         private static Player PlayerClient { get; set; } = null;
 
         protected override MethodBase GetTargetMethod()
@@ -69,7 +65,7 @@ namespace RevivalLite.Features
                 }
 
                 // Check for manual revival key press when in critical state
-                if (_playerInCriticalState.TryGetValue(playerId, out bool inCritical) && inCritical && Constants.Constants.SELF_REVIVAL)
+                if (_playerInCriticalState.TryGetValue(playerId, out bool inCritical) && inCritical)
                 {
                     if (Input.GetKeyDown(Settings.REVIVAL_KEY.Value))
                     {
@@ -81,11 +77,6 @@ namespace RevivalLite.Features
             {
                 Plugin.LogSource.LogError($"Error in RevivalFeatureExtension patch: {ex.Message}");
             }
-        }
-
-        public static bool IsPlayerInCriticalState(string playerId)
-        {
-            return _playerInCriticalState.TryGetValue(playerId, out bool inCritical) && inCritical;
         }
 
         public static void SetPlayerCriticalState(Player player, bool criticalState)
@@ -113,7 +104,7 @@ namespace RevivalLite.Features
                     {
                         // Show revival message
                         NotificationManagerClass.DisplayMessageNotification(
-                            $"CRITICAL CONDITION! Press {Settings.REVIVAL_KEY.Value.ToString()} to use your defibrillator!",
+                            $"CRITICAL CONDITION! Press {Settings.REVIVAL_KEY.Value.ToString()} to revive!",
                             ENotificationDurationType.Long,
                             ENotificationIconType.Default,
                             Color.red);
@@ -165,156 +156,38 @@ namespace RevivalLite.Features
             }
         }
 
-        public static KeyValuePair<string, bool> CheckRevivalItemInRaidInventory()
-        {
-            Plugin.LogSource.LogDebug("Checking for revival item in inventory");
-
-            try
-            {
-                if (PlayerClient == null)
-                {
-                    if (Singleton<GameWorld>.Instantiated)
-                    {
-                        PlayerClient = Singleton<GameWorld>.Instance.MainPlayer;
-                        Plugin.LogSource.LogDebug($"Initialized PlayerClient: {PlayerClient != null}");
-                    }
-                    else
-                    {
-                        Plugin.LogSource.LogWarning("GameWorld not instantiated yet");
-                        return new KeyValuePair<string, bool>(string.Empty, false);
-                    }
-                }
-
-                if (PlayerClient == null)
-                {
-                    Plugin.LogSource.LogError("PlayerClient is still null after initialization attempt");
-                    return new KeyValuePair<string, bool>(string.Empty, false);
-                }
-
-                string playerId = PlayerClient.ProfileId;
-                var inRaidItems = PlayerClient.Inventory.GetPlayerItems(EPlayerItems.Equipment);
-                bool hasItem = inRaidItems.Any(item => item.TemplateId == Constants.Constants.ITEM_ID);
-
-                Plugin.LogSource.LogDebug($"Player {playerId} has revival item: {hasItem}");
-                return new KeyValuePair<string, bool>(playerId, hasItem);
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogSource.LogError($"Error checking revival item: {ex.Message}");
-                return new KeyValuePair<string, bool>(string.Empty, false);
-            }
-        }
-
         public static bool TryPerformManualRevival(Player player)
         {
             if (player == null) return false;
 
             string playerId = player.ProfileId;
 
-            // Check if the player has the revival item
-            bool hasDefib = CheckRevivalItemInRaidInventory().Value;
+            // Set alive first before applying effects
+            player.ActiveHealthController.IsAlive = true;
 
-            // Check if the revival is on cooldown
-            bool isOnCooldown = false;
-            if (_lastRevivalTimesByPlayer.TryGetValue(playerId, out long lastRevivalTime))
-            {
-                long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                isOnCooldown = (currentTime - lastRevivalTime) < Settings.REVIVAL_COOLDOWN.Value;
-            }
+            HealPlayer(player);
 
-            if (isOnCooldown)
-            {
-                // Calculate remaining cooldown
-                long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                int remainingCooldown = (int)(Settings.REVIVAL_COOLDOWN.Value - (currentTime - lastRevivalTime));
+            StartInvulnerability(player);
 
-                NotificationManagerClass.DisplayMessageNotification(
-                    $"Revival on cooldown! Available in {remainingCooldown} seconds",
-                    ENotificationDurationType.Long,
-                    ENotificationIconType.Alert,
-                    Color.yellow);
-                if (!Settings.TESTING.Value) return false;
+            // Stand player up 
+            player.MovementContext.SetPoseLevel(1);
+            player.MovementContext.IsInPronePose = false;
+            player.MovementContext.EnableSprint(true);
 
-            }
+            player.Say(EPhraseTrigger.OnMutter, false, 2f, ETagStatus.Combat, 100, true);
 
-            if (hasDefib || Settings.TESTING.Value)
-            {
-                // Consume the item
-                if (hasDefib && !Settings.TESTING.Value)
-                {
-                    ConsumeDefibItem(player);
-                }
+            _playerInCriticalState[playerId] = false;
+            _lastRevivalTimesByPlayer[playerId] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-                // Set alive first before applying effects
-                player.ActiveHealthController.IsAlive = true;
+            // Show successful revival notification
+            NotificationManagerClass.DisplayMessageNotification(
+                $"Invulnerability started - {Settings.REVIVAL_DURATION.Value}s! {Plugin.CurrentLives} lives left.",
+                ENotificationDurationType.Long,
+                ENotificationIconType.Default,
+                Color.green);
 
-                HealPlayer(player);
-
-                StartInvulnerability(player);
-
-                // Stand player up 
-                player.MovementContext.SetPoseLevel(1);
-                player.MovementContext.IsInPronePose = false;
-                player.MovementContext.EnableSprint(true);
-
-                player.Say(EPhraseTrigger.OnMutter, false, 2f, ETagStatus.Combat, 100, true);
-
-                _playerInCriticalState[playerId] = false;
-                _lastRevivalTimesByPlayer[playerId] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-                // Show successful revival notification
-                NotificationManagerClass.DisplayMessageNotification(
-                    $"Invulnerability started ({Settings.REVIVAL_DURATION.Value}s)!",
-                    ENotificationDurationType.Long,
-                    ENotificationIconType.Default,
-                    Color.green);
-
-                Plugin.LogSource.LogInfo($"Manual revival performed for player {playerId}");
-                return true;
-            }
-            else
-            {
-                NotificationManagerClass.DisplayMessageNotification(
-                    "No defibrillator found! Unable to revive!",
-                    ENotificationDurationType.Long,
-                    ENotificationIconType.Alert,
-                    Color.red);
-
-                return false;
-            }
-        }
-
-        private static void ConsumeDefibItem(Player player)
-        {
-            try
-            {
-                var inRaidItems = player.Inventory.GetPlayerItems(EPlayerItems.Equipment);
-                Item defibItem = inRaidItems.FirstOrDefault(item => item.TemplateId == Constants.Constants.ITEM_ID);
-
-                if (defibItem != null)
-                {
-                    // Use reflection to access the necessary methods to destroy the item
-                    MethodInfo moveMethod = AccessTools.Method(typeof(InventoryController), "ThrowItem");
-                    if (moveMethod != null)
-                    {
-                        // This will effectively discard the item
-                        moveMethod.Invoke(player.InventoryController, new object[] { defibItem, false, null });
-                        Plugin.LogSource.LogInfo($"Consumed defibrillator item {defibItem.Id}");
-                    }
-                    else
-                    {
-                        Plugin.LogSource.LogError("Could not find ThrowItem method");
-                    }
-                }
-                else
-                {
-                    Plugin.LogSource.LogWarning("No defibrillator item found to consume");
-                }
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogSource.LogError($"Error consuming defib item: {ex.Message}");
-            }
+            Plugin.LogSource.LogInfo($"Manual revival performed for player {playerId}");
+            return true;
         }
 
         public static void HealPlayer(Player player)

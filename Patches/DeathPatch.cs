@@ -8,10 +8,10 @@ using System.Linq;
 using System.Reflection;
 using EFT.InventoryLogic;
 using EFT.Communications;
-using RevivalLite.Features;
-using RevivalLite.Helpers;
+using PlayerLives.Features;
+using PlayerLives.Helpers;
 
-namespace RevivalLite.Patches
+namespace PlayerLives.Patches
 {
     internal class DeathPatch : ModulePatch
     {
@@ -44,37 +44,21 @@ namespace RevivalLite.Patches
                     return false; // Block the kill completely
                 }
 
-                // Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player {player.ProfileId} about to die from {damageType}");
+                // Check if player has remaining lives
+                bool hasLives = Plugin.CurrentLives > 0;
 
-                // Check if the player has the revival item
-                var inRaidItems = player.Inventory.GetPlayerItems(EPlayerItems.Equipment);
-                bool hasDefib = inRaidItems.Any(item =>
-                {
-                    return item.TemplateId == Constants.Constants.ITEM_ID;
-                });
+                Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player has lives: {hasLives || Settings.TESTING.Value}");
 
-                Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player has defibrillator: {hasDefib || Settings.TESTING.Value}");
-
-                if (hasDefib || Settings.TESTING.Value)
+                if (hasLives || Settings.TESTING.Value)
                 {
                     Plugin.LogSource.LogInfo("DEATH PREVENTION: Setting player to critical state instead of death");
-                    if (Settings.HARDCORE_MODE.Value)
-                    {
-                        if (Settings.HARDCORE_HEADSHOT_DEFAULT_DEAD.Value && __instance.GetBodyPartHealth(EBodyPart.Head, true).Current < 1)
-                        {
-                            Plugin.LogSource.LogInfo($"DEATH NOT PREVENTED: Player headshotted");
-                            return true;
-                        }
 
-                        var _randomNumber = new Random().Range(0, 100) / 100;
-                        if (Settings.HARDCORE_CHANCE_OF_CRITICAL_STATE.Value < _randomNumber)
-                        {
-                            Plugin.LogSource.LogInfo($"DEATH NOT PREVENTED: Player was unlucky. Random Number was: {_randomNumber}");
-                            return true;
-                        }
-                    }
                     // Set the player in critical state for the revival system
                     RevivalFeatures.SetPlayerCriticalState(player, true);
+
+                    Plugin.CurrentLives--;
+
+                    Plugin.LogSource.LogInfo($"DEATH PREVENTED: Player lives left {Plugin.CurrentLives}");
 
                     // Block the kill completely
                     return false;
