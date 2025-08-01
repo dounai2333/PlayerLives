@@ -3,13 +3,12 @@ using EFT.HealthSystem;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using EFT.InventoryLogic;
 using EFT.Communications;
 using PlayerLives.Features;
 using PlayerLives.Helpers;
+using UnityEngine;
 
 namespace PlayerLives.Patches
 {
@@ -40,18 +39,34 @@ namespace PlayerLives.Patches
                 if (RevivalFeatures.IsPlayerInvulnerable(playerId))
                 {
                     Plugin.LogSource.LogInfo($"Player {playerId} is invulnerable, blocking death completely");
-
                     return false; // Block the kill completely
                 }
+
+                // Check if player is buffed
+                if (Settings.REQUIRE_BUFF_TYPE.Value != "None")
+                    if (!__instance.ActiveBuffsNames().Contains(Settings.REQUIRE_BUFF_TYPE.Value))
+                    {
+                        // The required buff is not active so die
+                        if (!Plugin.shownDeathNotification)
+                        {
+                            NotificationManagerClass.DisplayMessageNotification(
+                                $"You are DEAD! [{Settings.REQUIRE_BUFF_TYPE.Value}] was not active.",
+                                ENotificationDurationType.Long,
+                                ENotificationIconType.Default,
+                                Color.red);
+                            Plugin.shownDeathNotification = true;
+                        }
+
+                        Plugin.LogSource.LogInfo($"Player {playerId} ({string.Join(",", __instance.ActiveBuffsNames())}) was not buffed with {Settings.REQUIRE_BUFF_TYPE.Value} and has died");
+                        return true;
+                    }
 
                 // Check if player has remaining lives
                 bool hasLives = Plugin.CurrentLives > 0;
 
-                Plugin.LogSource.LogInfo($"DEATH PREVENTION: Player has lives: {hasLives || Settings.TESTING.Value}");
-
                 if (hasLives || Settings.TESTING.Value)
                 {
-                    Plugin.LogSource.LogInfo("DEATH PREVENTION: Setting player to critical state instead of death");
+                    Plugin.LogSource.LogInfo("DEATH PREVENTED: Setting player to critical state instead of death");
 
                     // Set the player in critical state for the revival system
                     RevivalFeatures.SetPlayerCriticalState(player, true);

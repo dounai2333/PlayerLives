@@ -23,6 +23,7 @@ namespace PlayerLives.Patches
 
             // Raid start, reset number of lives 
             Plugin.CurrentLives = Settings.PLAYER_LIVES.Value;
+            Plugin.shownDeathNotification = false;
 
             Plugin.LogSource.LogInfo($"Raid started, setting lives to {Plugin.CurrentLives}");
         }

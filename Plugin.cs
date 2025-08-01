@@ -11,6 +11,7 @@ namespace PlayerLives
     {
         public static ManualLogSource LogSource;
         public static int CurrentLives;
+        public static bool shownDeathNotification = false;
 
         private void Awake()
         {
