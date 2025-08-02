@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>somtam.PlayerLives</AssemblyName>
     <Description>PlayerLives</Description>
-    <Version>1.0.0</Version>
+    <Version>1.1.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
