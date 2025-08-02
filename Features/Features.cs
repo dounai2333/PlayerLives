@@ -133,7 +133,7 @@ namespace PlayerLives.Features
             {
                 string playerId = player.ProfileId;
 
-                player.Awareness = 0f;
+                // player.Awareness = 0f;
 
                 player.HandsController.IsAiming = false;
                 // player.SetEmptyHands(null); // remove weapon

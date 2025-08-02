@@ -39,7 +39,7 @@ namespace PlayerLives.Helpers
                 new ConfigDescription(
                     "Select required buff to be active for revive.",
                     new AcceptableValueList<string>("None", "BuffsAdrenaline", "BuffsPropital",
-                    "BuffsSJ1TGLabs", "BuffsSJ6TGLabs", "BuffsZagustin",
+                    "BuffsSJ1TGLabs", "BuffsSJ6TGLabs", "BuffsZagustin", "BuffseTGchange",
                     "Buffs_2A2bTG", "Buffs_3bTG", "Buffs_AHF1M", "Buffs_Antidote",
                     "Buffs_L1", "Buffs_MULE", "Buffs_Meldonin", "Buffs_Obdolbos", "Buffs_Obdolbos2",
                     "Buffs_P22", "Buffs_PNB", "Buffs_Perfotoran", "Buffs_SJ12_TGLabs", "Buffs_Trimadol")
