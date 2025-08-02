@@ -62,9 +62,7 @@ namespace PlayerLives.Patches
                     }
 
                 // Check if player has remaining lives
-                bool hasLives = Plugin.CurrentLives > 0;
-
-                if (hasLives || Settings.TESTING.Value)
+                if (Plugin.CurrentLives > 0 || Settings.TESTING.Value)
                 {
                     Plugin.LogSource.LogInfo("DEATH PREVENTED: Setting player to critical state instead of death");
 
