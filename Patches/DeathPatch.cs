@@ -35,6 +35,23 @@ namespace PlayerLives.Patches
 
                 string playerId = player.ProfileId;
 
+                var hc = player.ActiveHealthController;
+                var headHealth = hc.GetBodyPartHealth(EBodyPart.Head, false);
+
+                if (Settings.REQUIRE_HEAD_HEALTH.Value && headHealth.Current <= 0)
+                {
+                    if (!Plugin.shownDeathNotification)
+                    {
+                        NotificationManagerClass.DisplayMessageNotification(
+                            $"You are DEAD! Head health was zero.",
+                            ENotificationDurationType.Long,
+                            ENotificationIconType.Default,
+                            Color.red);
+                        Plugin.shownDeathNotification = true;
+                    }
+                    return true;
+                }
+
                 // Check if player is invulnerable from recent revival
                 if (RevivalFeatures.IsPlayerInvulnerable(playerId))
                 {

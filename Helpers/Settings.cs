@@ -9,6 +9,7 @@ namespace PlayerLives.Helpers
         public static ConfigEntry<KeyCode> REVIVAL_KEY;
         public static ConfigEntry<bool> RESTORE_DESTROYED_BODY_PARTS;
         public static ConfigEntry<bool> TESTING;
+        public static ConfigEntry<bool> REQUIRE_HEAD_HEALTH;
         public static ConfigEntry<int> PLAYER_LIVES;
         public static ConfigEntry<string> REQUIRE_BUFF_TYPE;
         public static void Init(ConfigFile config)
@@ -33,8 +34,8 @@ namespace PlayerLives.Helpers
             );
 
             REQUIRE_BUFF_TYPE = config.Bind(
-                "General",
-                "Require Buff To Revive",
+                "Revive Conditions",
+                "Require Buff",
                 "None",
                 new ConfigDescription(
                     "Select required buff to be active for revive.",
@@ -45,6 +46,14 @@ namespace PlayerLives.Helpers
                     "Buffs_P22", "Buffs_PNB", "Buffs_Perfotoran", "Buffs_SJ12_TGLabs", "Buffs_Trimadol")
                 )
             );
+
+            REQUIRE_HEAD_HEALTH = config.Bind(
+                "Revive Conditions",
+                "Require Head Health > 0",
+                false,
+                "if your head health is 0, revives will no longer work."
+            );
+
 
             RESTORE_DESTROYED_BODY_PARTS = config.Bind(
                 "On Revive",
