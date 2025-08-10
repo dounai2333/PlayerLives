@@ -11,6 +11,7 @@ namespace PlayerLives.Helpers
         public static ConfigEntry<bool> TESTING;
         public static ConfigEntry<bool> REQUIRE_HEAD_HEALTH;
         public static ConfigEntry<int> PLAYER_LIVES;
+        public static ConfigEntry<int> RESTORE_DESTROYED_BODY_PARTS_HEALING;
         public static ConfigEntry<string> REQUIRE_BUFF_TYPE;
         public static void Init(ConfigFile config)
         {
@@ -59,7 +60,17 @@ namespace PlayerLives.Helpers
                 "On Revive",
                 "Restore destroyed body parts",
                 true,
-               "Blackened body parts are restored and healed for 25%"
+               "Blackened body parts are restored%"
+            );
+
+            RESTORE_DESTROYED_BODY_PARTS_HEALING = config.Bind(
+                "On Revive",
+                "Restore destroyed body parts healing",
+                25,
+                 new ConfigDescription(
+                    "Healing amount %",
+                    new AcceptableValueRange<int>(1, 100)
+                )
             );
 
             TESTING = config.Bind(
