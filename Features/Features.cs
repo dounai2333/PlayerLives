@@ -148,7 +148,7 @@ namespace PlayerLives.Features
                 player.ActiveHealthController.DoStun(1f, 1f);
 
                 // Is alive player can't open menu
-                player.ActiveHealthController.IsAlive = false;
+                player.ActiveHealthController.IsAlive = true;
 
             }
             catch (Exception ex)
@@ -215,7 +215,10 @@ namespace PlayerLives.Features
                             // take health down to 25%
                             ActiveHealthController.BodyPartState bodyPartState = healthController.Dictionary_0[bodyPart];
                             bodyPartState.IsDestroyed = false;
-                            bodyPartState.Health = new HealthValue(bodyPartState.Health.Maximum * 0.25f, bodyPartState.Health.Maximum);
+                            bodyPartState.Health = new HealthValue(
+                                bodyPartState.Health.Maximum * (Settings.RESTORE_DESTROYED_BODY_PARTS_HEALING.Value / 100),
+                                bodyPartState.Health.Maximum
+                            );
                             healthController.method_43(bodyPart, EDamageType.Undefined);
                             healthController.method_35(bodyPart);
                         }
