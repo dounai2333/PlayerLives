@@ -72,6 +72,12 @@ namespace PlayerLives.Features
                     {
                         TryPerformManualRevival(__instance);
                     }
+
+                    // Check for give up
+                    if (Input.GetKeyDown(Settings.GIVE_UP_KEY.Value))
+                    {
+                        GiveUp(__instance);
+                    }
                 }
             }
             catch (Exception ex)
@@ -133,13 +139,12 @@ namespace PlayerLives.Features
             {
                 string playerId = player.ProfileId;
 
-                // player.Awareness = 0f;
-
+                // player.SetEmptyHands(null);
                 player.HandsController.IsAiming = false;
-                // player.SetEmptyHands(null); // remove weapon
                 player.MovementContext.EnableSprint(false);
                 player.MovementContext.SetPoseLevel(0);
                 player.MovementContext.IsInPronePose = true;
+
                 player.ResetLookDirection();
                 player.MovementContext.ReleaseDoorIfInteractingWithOne();
 
@@ -148,7 +153,7 @@ namespace PlayerLives.Features
                 player.ActiveHealthController.DoStun(1f, 1f);
 
                 // Is alive player can't open menu
-                player.ActiveHealthController.IsAlive = true;
+                player.ActiveHealthController.IsAlive = false;
 
             }
             catch (Exception ex)
@@ -191,6 +196,37 @@ namespace PlayerLives.Features
             return true;
         }
 
+        public static bool GiveUp(Player player)
+        {
+            if (player == null) return false;
+
+            string playerId = player.ProfileId;
+
+            // Set alive first before applying effects
+            _playerInCriticalState[playerId] = false;
+            _lastRevivalTimesByPlayer[playerId] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            Plugin.GaveUp = true;
+
+            // Kill player by applying fatal damage to head
+            if (player.ActiveHealthController != null)
+            {
+                player
+                .ActiveHealthController
+                .ApplyDamage(EBodyPart.Head, player.ActiveHealthController.GetBodyPartHealth(EBodyPart.Head).Maximum + 100f, new DamageInfoStruct());
+            }
+
+            // Show successful revival notification
+            NotificationManagerClass.DisplayMessageNotification(
+                $"You gave up!",
+                ENotificationDurationType.Long,
+                ENotificationIconType.Default,
+                Color.red);
+
+            Plugin.LogSource.LogInfo($"Player gave up {playerId}");
+            return true;
+        }
+
         public static void HealPlayer(Player player)
         {
             try
@@ -215,8 +251,9 @@ namespace PlayerLives.Features
                             // take health down to 25%
                             ActiveHealthController.BodyPartState bodyPartState = healthController.Dictionary_0[bodyPart];
                             bodyPartState.IsDestroyed = false;
+                            float healingPercent = bodyPartState.Health.Maximum * (Settings.RESTORE_DESTROYED_BODY_PARTS_HEALING.Value / 100f);
                             bodyPartState.Health = new HealthValue(
-                                bodyPartState.Health.Maximum * (Settings.RESTORE_DESTROYED_BODY_PARTS_HEALING.Value / 100),
+                                healingPercent,
                                 bodyPartState.Health.Maximum
                             );
                             healthController.method_43(bodyPart, EDamageType.Undefined);

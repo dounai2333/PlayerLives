@@ -7,6 +7,7 @@ namespace PlayerLives.Helpers
     {
         public static ConfigEntry<float> REVIVAL_DURATION;
         public static ConfigEntry<KeyCode> REVIVAL_KEY;
+        public static ConfigEntry<KeyCode> GIVE_UP_KEY;
         public static ConfigEntry<bool> RESTORE_DESTROYED_BODY_PARTS;
         public static ConfigEntry<bool> TESTING;
         public static ConfigEntry<bool> REQUIRE_HEAD_HEALTH;
@@ -27,12 +28,17 @@ namespace PlayerLives.Helpers
                 10f,
                "How long you are invulnerable for after revive."
             );
-
             REVIVAL_KEY = config.Bind(
                 "General",
                 "Revival Key",
                 KeyCode.F5
             );
+            GIVE_UP_KEY = config.Bind(
+                 "General",
+                 "Give Up Key",
+                 KeyCode.F9
+             );
+
 
             REQUIRE_BUFF_TYPE = config.Bind(
                 "Revive Conditions",

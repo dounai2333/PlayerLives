@@ -33,6 +33,9 @@ namespace PlayerLives.Patches
 
                 if (!player.IsYourPlayer || player.IsAI) return true;
 
+                // Gave up?
+                if (Plugin.GaveUp) return true;
+
                 string playerId = player.ProfileId;
 
                 var hc = player.ActiveHealthController;
