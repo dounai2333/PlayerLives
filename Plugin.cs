@@ -6,7 +6,7 @@ using PlayerLives.Features;
 
 namespace PlayerLives
 {
-    [BepInPlugin("com.somtam.playerLives", "Player Lives", "1.1.3")]
+    [BepInPlugin("com.somtam.playerLives", "Player Lives", "1.1.4")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
