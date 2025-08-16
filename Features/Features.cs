@@ -68,6 +68,12 @@ namespace PlayerLives.Features
                 // Check for manual revival key press when in critical state
                 if (_playerInCriticalState.TryGetValue(playerId, out bool inCritical) && inCritical)
                 {
+
+                    // Force critical state 
+                    PlayerClient.SetEmptyHands(null);
+                    PlayerClient.MovementContext.SetPoseLevel(0);
+                    PlayerClient.MovementContext.IsInPronePose = true;
+
                     if (Input.GetKeyDown(Settings.REVIVAL_KEY.Value))
                     {
                         TryPerformManualRevival(__instance);
@@ -153,7 +159,7 @@ namespace PlayerLives.Features
                 player.ActiveHealthController.DoStun(1f, 1f);
 
                 // Is alive player can't open menu
-                player.ActiveHealthController.IsAlive = false;
+                // player.ActiveHealthController.IsAlive = false;
 
             }
             catch (Exception ex)
@@ -169,7 +175,7 @@ namespace PlayerLives.Features
             string playerId = player.ProfileId;
 
             // Set alive first before applying effects
-            player.ActiveHealthController.IsAlive = true;
+            // player.ActiveHealthController.IsAlive = true;
 
             HealPlayer(player);
 
