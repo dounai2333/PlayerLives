@@ -14,6 +14,8 @@ namespace PlayerLives.Helpers
         public static ConfigEntry<int> PLAYER_LIVES;
         public static ConfigEntry<int> RESTORE_DESTROYED_BODY_PARTS_HEALING;
         public static ConfigEntry<string> REQUIRE_BUFF_TYPE;
+        public static ConfigEntry<string> REQUIRE_STIM;
+
         public static void Init(ConfigFile config)
         {
             PLAYER_LIVES = config.Bind(
@@ -42,7 +44,7 @@ namespace PlayerLives.Helpers
 
             REQUIRE_BUFF_TYPE = config.Bind(
                 "Revive Conditions",
-                "Require Buff",
+                "Require Active Buff",
                 "None",
                 new ConfigDescription(
                     "Select required buff to be active for revive.",
@@ -51,6 +53,19 @@ namespace PlayerLives.Helpers
                     "Buffs_2A2bTG", "Buffs_3bTG", "Buffs_AHF1M", "Buffs_Antidote",
                     "Buffs_L1", "Buffs_MULE", "Buffs_Meldonin", "Buffs_Obdolbos", "Buffs_Obdolbos2",
                     "Buffs_P22", "Buffs_PNB", "Buffs_Perfotoran", "Buffs_SJ12_TGLabs", "Buffs_Trimadol")
+                )
+            );
+
+            REQUIRE_STIM = config.Bind(
+                "Revive Conditions",
+                "Require Stim",
+                "None",
+                new ConfigDescription(
+                    "Select stim that will be used for revive.",
+                    new AcceptableValueList<string>("None", "Adrenaline", "Propital",
+                    "SJ1TGLabs", "SJ6TGLabs", "Zagustin", "eTGchange", "2A2bTG", "3bTG",
+                    "AHF1M", "Antidote", "L1", "MULE", "Meldonin", "Obdolbos", "Obdolbos2",
+                    "P22", "PNB", "Perfotoran", "SJ12_TGLabs", "Trimadol")
                 )
             );
 

@@ -81,6 +81,25 @@ namespace PlayerLives.Patches
                         return true;
                     }
 
+                // Check if player has stim?
+                if (Settings.REQUIRE_STIM.Value != "None")
+                    if (!RevivalFeatures.hasReviveItem(player))
+                    {
+                        // The required buff is not active so die
+                        if (!Plugin.shownDeathNotification)
+                        {
+                            NotificationManagerClass.DisplayMessageNotification(
+                                $"You are DEAD! [{Settings.REQUIRE_STIM.Value}] stim was not in inventory.",
+                                ENotificationDurationType.Long,
+                                ENotificationIconType.Default,
+                                Color.red);
+                            Plugin.shownDeathNotification = true;
+                        }
+
+                        Plugin.LogSource.LogInfo($"Player {playerId} did not have {Settings.REQUIRE_STIM.Value} stim and has died");
+                        return true;
+                    }
+
                 // Check if player has remaining lives
                 if (Plugin.CurrentLives > 0 || Settings.TESTING.Value)
                 {

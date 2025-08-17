@@ -1,6 +1,7 @@
 ﻿using EFT;
 using EFT.HealthSystem;
 using EFT.Communications;
+using Comfort.Common;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
@@ -8,7 +9,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using PlayerLives.Helpers;
-
+using System.Linq;
+using System.Collections;
 
 namespace PlayerLives.Features
 {
@@ -42,6 +44,12 @@ namespace PlayerLives.Features
 
                 // Only proceed for the local player
                 if (!__instance.IsYourPlayer) return;
+
+
+                if (Input.GetKeyDown(Settings.REVIVAL_KEY.Value))
+                {
+                    TryPerformManualRevival(__instance);
+                }
 
                 // Update invulnerability timer if active
                 if (_playerIsInvulnerable.TryGetValue(playerId, out bool isInvulnerable) && isInvulnerable)
@@ -139,6 +147,35 @@ namespace PlayerLives.Features
             }
         }
 
+        public static string FindItemId(string stimName)
+        {
+            return stimName switch
+            {
+                "Adrenaline" => "5c10c8fd86f7743d7d706df3",
+                "Propital" => "5c0e530286f7747fa1419862",
+                "SJ1TGLabs" => "5c0e531286f7747fa54205c2",
+                "SJ6TGLabs" => "5c0e531d86f7747fa23f4d42",
+                "Zagustin" => "5c0e533786f7747fa23f4d47",
+                "eTGchange" => "5c0e534186f7747fa1419867",
+                "2A2bTG" => "66507eabf5ddb0818b085b68",
+                "3bTG" => "5ed515c8d380ab312177c0fa",
+                "AHF1M" => "5ed515f6915ec335206e4152",
+                "Antidote" => "5ed515f6915ec335206e4152",
+                "L1" => "5ed515e03a40a50460332579",
+                "MULE" => "5ed51652f6c34d2cc26336a1",
+                "Meldonin" => "5ed5160a87bb8443d10680b5",
+                "Obdolbos" => "5ed5166ad380ab312177c100",
+                "Obdolbos2" => "637b60c3b7afa97bfc3d7001",
+                "P22" => "5ed515ece452db0eb56fc028",
+                "PNB" => "637b6179104668754b72f8f5",
+                "Perfotoran" => "637b6251104668754b72f8f9",
+                "SJ12_TGLabs" => "637b612fb7afa97bfc3d7005",
+                "Trimadol" => "637b620db7afa97bfc3d7009",
+                _ => "",
+            };
+
+        }
+
         private static void ApplyCriticalStatePlayer(Player player)
         {
             try
@@ -168,14 +205,71 @@ namespace PlayerLives.Features
             }
         }
 
+        public static bool hasReviveItem(Player player)
+        {
+            var reviveItemId = FindItemId(Settings.REQUIRE_STIM.Value);
+
+            if (reviveItemId == "") return false;
+
+            var inRaidItems = player.Inventory.GetPlayerItems(EFT.InventoryLogic.EPlayerItems.Equipment);
+
+            return inRaidItems.Any(item => item.TemplateId == reviveItemId);
+        }
+
+        private static void ConsumeReviveItem(Player player)
+        {
+            try
+            {
+                var reviveItemId = FindItemId(Settings.REQUIRE_STIM.Value);
+
+                if (reviveItemId == "") return;
+
+                var inRaidItems = player.Inventory.GetPlayerItems(EFT.InventoryLogic.EPlayerItems.Equipment);
+                var reviveItem = inRaidItems.FirstOrDefault(item => item.TemplateId == reviveItemId);
+
+                if (reviveItem != null)
+                {
+                    var discard = InteractionsHandlerClass.Discard(reviveItem, player.InventoryController, false);
+                    if (!discard.Succeeded)
+                        Plugin.LogSource.LogError($"Error consuming item: {discard.Error}");
+                    else
+                        Plugin.LogSource.LogInfo($"You have {CountReviveItemsInRaid(player, reviveItemId)} revive items left");
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.LogSource.LogError($"Error consuming item: {ex.Message}");
+            }
+        }
+
+        public static int CountReviveItemsInRaid(Player player, string reviveItemId)
+        {
+            // Initialize a counter for items matching the reviveItemId
+            int count = 0;
+
+            // Retrieve all items in raid from the player's inventory
+            var inRaidItems = player.Inventory.GetPlayerItems(EFT.InventoryLogic.EPlayerItems.Equipment);
+
+            // Iterate over the items to count matching items
+            foreach (var item in inRaidItems)
+            {
+                if (item.TemplateId == reviveItemId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         public static bool TryPerformManualRevival(Player player)
         {
             if (player == null) return false;
 
             string playerId = player.ProfileId;
 
-            // Set alive first before applying effects
-            // player.ActiveHealthController.IsAlive = true;
+            if (Settings.REQUIRE_STIM.Value != "None")
+                ConsumeReviveItem(player);
 
             HealPlayer(player);
 
