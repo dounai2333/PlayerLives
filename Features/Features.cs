@@ -229,12 +229,23 @@ namespace PlayerLives.Features
 
                 if (reviveItem != null)
                 {
-                    var discard = InteractionsHandlerClass.Discard(reviveItem, player.InventoryController, false);
-                    if (!discard.Succeeded)
-                        Plugin.LogSource.LogError($"Error consuming item: {discard.Error}");
+                    GStruct455<GClass3200> gStruct = InteractionsHandlerClass.Discard(reviveItem, player.InventoryController, true);
+                    if (gStruct.Failed)
+                    {
+                        Plugin.LogSource.LogError($"Error consuming item: {gStruct.Error}");
+                    }
                     else
+                    {
+                        player.InventoryController.vmethod_1(
+                            new RemoveOperationClass(player.InventoryController.method_12(), player.InventoryController, gStruct.Value),
+                            null
+                            );
+
                         Plugin.LogSource.LogInfo($"You have {CountReviveItemsInRaid(player, reviveItemId)} revive items left");
+                    }
                 }
+
+
             }
             catch (Exception ex)
             {
