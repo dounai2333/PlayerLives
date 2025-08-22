@@ -45,12 +45,6 @@ namespace PlayerLives.Features
                 // Only proceed for the local player
                 if (!__instance.IsYourPlayer) return;
 
-
-                if (Input.GetKeyDown(Settings.REVIVAL_KEY.Value))
-                {
-                    TryPerformManualRevival(__instance);
-                }
-
                 // Update invulnerability timer if active
                 if (_playerIsInvulnerable.TryGetValue(playerId, out bool isInvulnerable) && isInvulnerable)
                 {
@@ -76,7 +70,6 @@ namespace PlayerLives.Features
                 // Check for manual revival key press when in critical state
                 if (_playerInCriticalState.TryGetValue(playerId, out bool inCritical) && inCritical)
                 {
-
                     // Force critical state 
                     PlayerClient.SetEmptyHands(null);
                     PlayerClient.MovementContext.SetPoseLevel(0);
