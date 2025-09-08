@@ -19,7 +19,7 @@ namespace PlayerLives.Features
     /// </summary>
     internal class RevivalFeatures : ModulePatch
     {
-        private static readonly bool DISABLE_SHOOTING_DURING_INVULNERABILITY = true; // Disable shooting during invulnerability
+        private static bool DISABLE_SHOOTING_DURING_INVULNERABILITY = true; // Disable shooting during invulnerability
         // States
         private static Dictionary<string, long> _lastRevivalTimesByPlayer = new Dictionary<string, long>();
         private static Dictionary<string, bool> _playerInCriticalState = new Dictionary<string, bool>();
@@ -218,31 +218,58 @@ namespace PlayerLives.Features
                 if (reviveItemId == "") return;
 
                 var inRaidItems = player.Inventory.GetPlayerItems(EFT.InventoryLogic.EPlayerItems.Equipment);
-                var reviveItem = inRaidItems.FirstOrDefault(item => item.TemplateId == reviveItemId);
+                var reviveItem = (MedsItemClass)inRaidItems.FirstOrDefault(item => item.TemplateId == reviveItemId);
 
                 if (reviveItem != null)
                 {
-                    GStruct455<GClass3200> gStruct = InteractionsHandlerClass.Discard(reviveItem, player.InventoryController, true);
-                    if (gStruct.Failed)
-                    {
-                        Plugin.LogSource.LogError($"Error consuming item: {gStruct.Error}");
-                    }
-                    else
-                    {
-                        player.InventoryController.vmethod_1(
-                            new RemoveOperationClass(player.InventoryController.method_12(), player.InventoryController, gStruct.Value),
-                            null
-                            );
+                    // Disable set hands to empty so player can use stim
+                    _playerInCriticalState[player.ProfileId] = false;
+                    DISABLE_SHOOTING_DURING_INVULNERABILITY = false;
 
-                        Plugin.LogSource.LogInfo($"You have {CountReviveItemsInRaid(player, reviveItemId)} revive items left");
-                    }
+                    player.SetInHands(reviveItem, EBodyPart.Chest, reviveItem.GetRandomAnimationVariant(), (result) =>
+                    {
+                        if (result.Failed) // Busy hands or some other issues, remove the item instead
+                        {
+                            GStruct455<GClass3200> gStruct = InteractionsHandlerClass.Discard(reviveItem, player.InventoryController, true);
+                            if (gStruct.Failed)
+                            {
+                                Plugin.LogSource.LogError($"Error consuming item: {gStruct.Error}");
+                            }
+                            else
+                            {
+                                player.InventoryController.vmethod_1(
+                                    new RemoveOperationClass(player.InventoryController.method_12(), player.InventoryController, gStruct.Value),
+                                    null
+                                    );
+                            }
+
+                            DISABLE_SHOOTING_DURING_INVULNERABILITY = true;
+                            TryPerformManualRevival(player, true);
+                        }
+                        else
+                        {
+                            // SetInHands() callback are instant here, so we need another delayed callback to do our action
+                            var handsController = (Player.MedsController)player.HandsController;
+                            handsController.SetOnUsedCallback((_) =>
+                            {
+                                player.SetEmptyHands((_) =>
+                                {
+                                    DISABLE_SHOOTING_DURING_INVULNERABILITY = true;
+                                    TryPerformManualRevival(player, true);
+
+                                    Plugin.LogSource.LogInfo(
+                                        $"You have {CountReviveItemsInRaid(player, reviveItemId)} revive items left");
+                                });
+                            });
+                        }
+                    });
                 }
-
-
             }
             catch (Exception ex)
             {
                 Plugin.LogSource.LogError($"Error consuming item: {ex.Message}");
+                DISABLE_SHOOTING_DURING_INVULNERABILITY = true;
+                TryPerformManualRevival(player, true);
             }
         }
 
@@ -266,14 +293,17 @@ namespace PlayerLives.Features
             return count;
         }
 
-        public static bool TryPerformManualRevival(Player player)
+        public static bool TryPerformManualRevival(Player player, bool reviveFromStim = false)
         {
             if (player == null) return false;
 
             string playerId = player.ProfileId;
 
-            if (Settings.REQUIRE_STIM.Value != "None")
+            if (Settings.REQUIRE_STIM.Value != "None" && !reviveFromStim)
+            {
                 ConsumeReviveItem(player);
+                return false;
+            }
 
             HealPlayer(player);
 
